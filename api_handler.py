@@ -428,13 +428,16 @@ def get_connector_version(connector_type: str) -> Optional[str]:
 
 
 @api_router.get("/connector/{connector_type}/test/{technology}")
-def run_connector_test_command(connector_type: str, technology: str, profile_db_id: str, trace_id: str, db_table: str):
+def run_connector_test_command(connector_type: str, technology: str, profile_db_id: str, trace_id: str,
+                               db_table: str = "local_connector_configuration"):
     """Run connector test command.
         :param connector_type (str): api, gcp, aws, azure
         :param technology (str): ad_ldap, okta
         :param profile_db_id (str): ui connector config db id
         :param trace_id (str): trace_id for this API, unique for each API
-        :param db_table (str): db_table to get connector config
+        :param db_table (str): db_table to get connector config. Defaults to the profile
+            collection existing callers read; required would 422 them (helper.test_profile
+            sends only profile_db_id and trace_id).
         """
     connector_version = get_connector_version(connector_type)
     if not connector_version:
