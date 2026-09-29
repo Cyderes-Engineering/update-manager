@@ -428,21 +428,25 @@ def get_connector_version(connector_type: str) -> Optional[str]:
 
 
 @api_router.get("/connector/{connector_type}/test/{technology}")
-def run_connector_test_command(connector_type: str, technology: str, profile_db_id: str, trace_id: str):
+def run_connector_test_command(connector_type: str, technology: str, profile_db_id: str, trace_id: str,
+                               db_table: Optional[str] = None):
     """Run connector test command.
         :param connector_type (str): api, gcp, aws, azure
         :param technology (str): ad_ldap, okta
         :param profile_db_id (str): ui connector config db id
         :param trace_id (str): trace_id for this API, unique for each API
+        :param db_table (str): db_table to get connector config. Only appended to the connector
+            command when given, so older connector images that don't accept it keep working.
         """
     connector_version = get_connector_version(connector_type)
     if not connector_version:
         return JSONResponse(content={"status": "FAILED", "output": "can't find image version"}, status_code=404)
     image = f"connector-{connector_type}:{connector_version}"
+    db_table_arg = f" {db_table}" if db_table else ""
     # api and sdk connections has technology
-    command = f'bash -c "python lucidum_{connector_type}.py test {technology} {profile_db_id}:{trace_id}"'
+    command = f'bash -c "python lucidum_{connector_type}.py test {technology} {profile_db_id}:{trace_id}{db_table_arg}"'
     if connector_type not in ['api', 'sdk']:  # cloud connectors default test all services
-        command = f'bash -c "python lucidum_{connector_type}.py test {profile_db_id}:{trace_id}"'
+        command = f'bash -c "python lucidum_{connector_type}.py test {profile_db_id}:{trace_id}{db_table_arg}"'
     # only connector-sdk need docker privilege to access host network
     docker_privileged = False
     if connector_type in ['sdk']:
